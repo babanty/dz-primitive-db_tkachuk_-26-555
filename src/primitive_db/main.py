@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 
+from primitive_db.engine import run
+
 
 def main():
-    print("Hello world")
+    """Run the database application."""
+    run()
 
 
 if __name__ == "__main__":
