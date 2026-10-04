@@ -189,5 +189,5 @@ database
 CRUD-операции, обработка ошибки валидации, отмена и подтверждение
 удаления, сохранение данных между запусками и удаление таблицы.
 
-[![Демонстрация Primitive DB](https://asciinema.org/a/NCD2Ml1rlOXRzJE8.svg)](https://asciinema.org/a/NCD2Ml1rlOXRzJE8)
+[Демонстрация Primitive DB](https://asciinema.org/a/NCD2Ml1rlOXRzJE8)
 
