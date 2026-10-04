@@ -5,6 +5,7 @@ from prettytable import PrettyTable
 
 from primitive_db import core
 from primitive_db.constants import HELP_TEXT, ID_COLUMN, INPUT_PROMPT, META_FILE
+from primitive_db.decorators import handle_db_errors
 from primitive_db.parser import parse_command
 from primitive_db.utils import (
     load_metadata,
@@ -155,17 +156,10 @@ def execute(user_input):
     return True
 
 
+@handle_db_errors
 def run_command(user_input):
-    """Execute a command without terminating the session on user errors."""
-    try:
-        return execute(user_input)
-    except KeyError as error:
-        print(f"Ошибка: {error.args[0]}")
-    except ValueError as error:
-        print(f"Ошибка валидации: {error}")
-    except OSError as error:
-        print(f"Ошибка файловой системы: {error}")
-    return None
+    """Execute a command with centralized error handling."""
+    return execute(user_input)
 
 
 def run():
@@ -175,10 +169,11 @@ def run():
     while True:
         try:
             user_input = prompt.string(INPUT_PROMPT)
+            result = run_command(user_input)
         except (EOFError, KeyboardInterrupt):
             print("\nДо свидания!")
             break
 
-        if run_command(user_input) is False:
+        if result is False:
             print("До свидания!")
             break

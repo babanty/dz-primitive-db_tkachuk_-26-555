@@ -1,7 +1,17 @@
 """Table management and database business logic."""
 
+import json
+
 from primitive_db.constants import FIRST_ID, ID_COLUMN, ID_TYPE, VALID_TYPES
+from primitive_db.decorators import (
+    confirm_action,
+    create_cacher,
+    handle_db_errors,
+    log_time,
+)
 from primitive_db.utils import load_table_data, validate_identifier
+
+_select_cache = create_cacher()
 
 
 def require_table(metadata, table_name):
@@ -89,6 +99,7 @@ def validate_rows(schema, rows):
         identifiers.add(identifier)
 
 
+@handle_db_errors
 def create_table(metadata, table_name, columns):
     """Add a validated table schema to metadata."""
     validate_identifier(table_name)
@@ -101,6 +112,8 @@ def create_table(metadata, table_name, columns):
     return metadata
 
 
+@handle_db_errors
+@confirm_action("удаление таблицы")
 def drop_table(metadata, table_name):
     """Remove an existing table schema."""
     require_table(metadata, table_name)
@@ -119,6 +132,8 @@ def matches(row, where_clause):
     )
 
 
+@handle_db_errors
+@log_time
 def insert(metadata, table_name, values):
     """Validate values, generate an ID and return rows with the new record."""
     schema = require_table(metadata, table_name)
@@ -147,11 +162,23 @@ def insert(metadata, table_name, values):
     return rows
 
 
+@handle_db_errors
+@log_time
 def select(table_data, where_clause=None):
-    """Return independent copies of rows matching the optional condition."""
-    return [row.copy() for row in table_data if matches(row, where_clause)]
+    """Return independent copies of cached rows for a data snapshot."""
+    key = json.dumps(
+        {"rows": table_data, "where": where_clause},
+        ensure_ascii=False,
+        sort_keys=True,
+    )
+    cached_rows = _select_cache(
+        key,
+        lambda: [row.copy() for row in table_data if matches(row, where_clause)],
+    )
+    return [row.copy() for row in cached_rows]
 
 
+@handle_db_errors
 def update(table_data, set_clause, where_clause):
     """Return rows with matching records updated, preserving input rows."""
     if ID_COLUMN in set_clause:
@@ -176,6 +203,8 @@ def update(table_data, set_clause, where_clause):
     return result
 
 
+@handle_db_errors
+@confirm_action("удаление записей")
 def delete(table_data, where_clause):
     """Return rows that do not match a mandatory deletion condition."""
     if not where_clause:
